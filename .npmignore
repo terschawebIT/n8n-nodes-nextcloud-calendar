@@ -1,0 +1,8 @@
+.DS_Store
+*.tsbuildinfo
+.eslintrc.js
+.prettierrc.js
+tsconfig.json
+gulpfile.js
+.git/
+.gitignore
