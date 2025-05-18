@@ -44,7 +44,7 @@ export async function createCalendar(
         filename: 'calendar.ics',
         iCalString: `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//n8n//CalDAV Node//EN
+PRODID:-//n8n//Nextcloud Calendar Node//EN
 NAME:${data.displayName}
 X-WR-TIMEZONE:${data.timezone || 'UTC'}
 END:VCALENDAR`,

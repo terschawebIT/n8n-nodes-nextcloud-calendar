@@ -20,7 +20,7 @@ export function formatEvent(eventData: IEventData): string {
 
     let iCalString = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//n8n//CalDAV Node Nextcloud//EN
+PRODID:-//n8n//Nextcloud Calendar Node//EN
 BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${now.substring(0, 15)}Z

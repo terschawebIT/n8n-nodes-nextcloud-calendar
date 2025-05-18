@@ -11,7 +11,7 @@ export interface INextcloudCalendarConfig {
 export function getNextcloudHeaders(): { [key: string]: string } {
     return {
         'OCS-APIRequest': 'true',
-        'User-Agent': 'n8n-nodes-caldav/1.0',
+        'User-Agent': 'n8n-nodes-nextcloud-calendar/1.0',
         'X-Requested-With': 'n8n'
     };
 }

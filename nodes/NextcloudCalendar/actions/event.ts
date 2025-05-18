@@ -1,11 +1,9 @@
 import { IExecuteFunctions } from 'n8n-workflow';
-import { DAVClient, DAVCalendar } from 'tsdav';
 import { IEventCreate, IEventUpdate, IEventResponse } from '../interfaces/event';
 import { initClient } from '../helpers/client';
 import { findCalendar } from './calendar';
 import { parseICalEvent } from '../helpers/parser';
-import { formatEvent } from '../helpers/formatter';
-import { parseEventResults } from '../helpers/parser';
+
 
 export async function getEvents(
     context: IExecuteFunctions,
@@ -199,7 +197,7 @@ export async function deleteEvent(
 function generateICalString(event: any) {
     return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//n8n//CalDAV Node//EN
+PRODID:-//n8n//Nextcloud Calendar Node//EN
 BEGIN:VEVENT
 UID:${event.uid}
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z

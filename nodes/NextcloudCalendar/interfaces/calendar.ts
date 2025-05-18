@@ -1,7 +1,5 @@
-import { IDataObject } from 'n8n-workflow';
-
 export interface ICalendarBase {
-    displayName: string;
+    displayName?: string;
     color?: string;
     timezone?: string;
     description?: string;
@@ -12,10 +10,7 @@ export interface ICalendarCreate {
     displayName: string;
     color?: string;
     description?: string;
-}
-
-export interface ICalendarUpdate extends ICalendarBase {
-    // Zusätzliche Felder für die Kalenderaktualisierung
+    timezone?: string;
 }
 
 export interface ICalendarResponse extends ICalendarCreate {
@@ -25,6 +20,11 @@ export interface ICalendarResponse extends ICalendarCreate {
     resourcetype: string[];
     owner?: string;
     principalURL?: string;
+}
+
+export interface ICalendarUpdate extends ICalendarBase {
+    name?: string;
+    displayName?: string;
 }
 
 export interface IEventCreate {

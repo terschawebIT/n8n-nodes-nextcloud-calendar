@@ -1,16 +1,8 @@
-import { IDataObject, GenericValue } from 'n8n-workflow';
-
-export interface IAttendee {
-    email: string;
-    displayName?: string;
-    role?: string;
-    rsvp?: boolean;
-    status?: string;
-}
+import { IAttendee } from './IAttendee';
 
 export interface IOrganizer {
     email: string;
-    displayName?: string;
+    displayName: string;
 }
 
 export interface IEventBase {
@@ -23,8 +15,17 @@ export interface IEventBase {
     organizer?: IOrganizer;
 }
 
-export interface IEventCreate extends IEventBase {
+export interface IEventCreate {
     calendarName: string;
+    title: string;
+    start: string;
+    end: string;
+    description?: string;
+    location?: string;
+    attendees?: IAttendee[];
+    room?: string;
+    resources?: string[];
+    alarmType?: 'EMAIL' | 'DISPLAY';
 }
 
 export interface IEventUpdate extends IEventBase {
