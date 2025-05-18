@@ -34,6 +34,7 @@ module.exports = {
 		{
 			files: ['package.json'],
 			plugins: ['eslint-plugin-n8n-nodes-base'],
+			parser: 'jsonc-eslint-parser',
 			rules: {
 				'n8n-nodes-base/community-package-json-name-still-default': 'error',
 			},

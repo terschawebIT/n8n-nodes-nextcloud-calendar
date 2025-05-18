@@ -18,6 +18,7 @@ import * as eventActions from './actions/event';
 import { parseNextcloudResponse } from './helpers/nextcloud';
 import { ICalendarCreate } from './interfaces/calendar';
 import { IEventCreate, IEventUpdate } from './interfaces/event';
+import { DAVCalendar } from 'tsdav';
 
 export class NextcloudCalendar implements INodeType {
     description: INodeTypeDescription = {
@@ -130,9 +131,9 @@ export class NextcloudCalendar implements INodeType {
                 this: ILoadOptionsFunctions,
             ): Promise<INodePropertyOptions[]> {
                 const calendars = await calendarActions.getCalendars(this);
-                return calendars.map((calendar: { displayName: string }) => ({
-                    name: calendar.displayName,
-                    value: calendar.displayName,
+                return calendars.map((calendar: DAVCalendar) => ({
+                    name: calendar.displayName?.toString() || '',
+                    value: calendar.displayName?.toString() || '',
                 }));
             },
         },

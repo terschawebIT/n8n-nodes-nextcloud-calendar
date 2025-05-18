@@ -1,6 +1,7 @@
 import { parseICS } from 'node-ical';
 import { DAVCalendarObject, DAVResponse } from 'tsdav';
-import { IEventResponse, IAttendee } from '../interfaces/event';
+import { IEventResponse } from '../interfaces/event';
+import { IAttendee } from '../interfaces/IAttendee';
 
 type CalendarObjectType = DAVCalendarObject | DAVResponse;
 
