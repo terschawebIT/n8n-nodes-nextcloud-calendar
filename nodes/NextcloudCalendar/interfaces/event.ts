@@ -1,9 +1,5 @@
 import { IAttendee } from './IAttendee';
-
-export interface IOrganizer {
-    email: string;
-    displayName: string;
-}
+import { IDataObject } from 'n8n-workflow';
 
 export interface IEventBase {
     title: string;
@@ -12,32 +8,32 @@ export interface IEventBase {
     description?: string;
     location?: string;
     attendees?: IAttendee[];
-    organizer?: IOrganizer;
 }
 
-export interface IEventCreate {
+export interface IEventCreate extends IEventBase {
     calendarName: string;
-    title: string;
-    start: string;
-    end: string;
-    description?: string;
-    location?: string;
-    attendees?: IAttendee[];
-    room?: string;
-    resources?: string[];
-    alarmType?: 'EMAIL' | 'DISPLAY';
 }
 
-export interface IEventUpdate extends IEventBase {
+export interface IEventUpdate extends Partial<IEventBase> {
     calendarName: string;
     eventId: string;
 }
 
-export interface IEventResponse extends IEventBase {
+export interface IEventResponse extends IDataObject {
     uid: string;
-    url: string;
-    etag: string;
+    url?: string;
+    etag?: string;
+    title?: string;
+    start?: string;
+    end?: string;
+    description?: string;
+    location?: string;
     created?: Date;
     lastModified?: Date;
     status?: string;
+    organizer?: {
+        email: string;
+        displayName?: string;
+    };
+    attendees?: IAttendee[];
 }
