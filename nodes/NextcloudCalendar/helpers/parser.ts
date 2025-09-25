@@ -45,11 +45,26 @@ interface IParsedEvent {
     location?: string;
     start?: Date;
     end?: Date;
+    tzidStart?: string;
+    tzidEnd?: string;
     created?: Date;
     lastmodified?: Date;
     status?: string;
+    dtstamp?: Date;
+    sequence?: number;
+    transparency?: 'OPAQUE' | 'TRANSPARENT' | string;
+    categories?: string[];
+    class?: 'PUBLIC' | 'PRIVATE' | 'CONFIDENTIAL' | string;
+    rrule?: string;
+    recurrenceId?: string;
+    exdate?: string[];
+    rdate?: string[];
+    priority?: number;
+    duration?: string;
+    geo?: { latitude: number; longitude: number };
     attendee?: Array<{ val: string; params: ICalParams }>;
     organizer?: { val: string; params: ICalParams };
+    raw?: Record<string, string | string[]>;
 }
 
 function parseICS(icsData: string): { vevent: IParsedEvent } {
@@ -75,7 +90,16 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
         if (colonIdx === -1) continue;
         const keyWithParams = rawLine.slice(0, colonIdx);
         const value = rawLine.slice(colonIdx + 1);
-        const [key] = keyWithParams.split(';'); // e.g. DTSTART;TZID=... -> DTSTART
+        const [key, ...paramParts] = keyWithParams.split(';'); // e.g. DTSTART;TZID=... -> DTSTART
+        const params: ICalParams = {};
+        for (const part of paramParts) {
+            const idx = part.indexOf('=');
+            if (idx > -1) {
+                const pKey = part.slice(0, idx);
+                const pVal = part.slice(idx + 1);
+                params[pKey] = pVal;
+            }
+        }
 
         switch (key) {
             case 'UID':
@@ -92,9 +116,11 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
                 break;
             case 'DTSTART':
                 event.start = parseICalDate(value);
+                if (params.TZID) event.tzidStart = params.TZID;
                 break;
             case 'DTEND':
                 event.end = parseICalDate(value);
+                if (params.TZID) event.tzidEnd = params.TZID;
                 break;
             case 'CREATED':
                 event.created = parseICalDate(value);
@@ -105,17 +131,61 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
             case 'STATUS':
                 event.status = value;
                 break;
+            case 'DTSTAMP':
+                event.dtstamp = parseICalDate(value);
+                break;
+            case 'SEQUENCE':
+                event.sequence = Number(value);
+                break;
+            case 'TRANSP':
+                event.transparency = value as IParsedEvent['transparency'];
+                break;
+            case 'CATEGORIES':
+                event.categories = value.split(',').map(v => v.trim()).filter(Boolean);
+                break;
+            case 'CLASS':
+                event.class = value as IParsedEvent['class'];
+                break;
+            case 'RRULE':
+                event.rrule = value;
+                break;
+            case 'RECURRENCE-ID':
+                event.recurrenceId = value;
+                break;
+            case 'EXDATE':
+                (event.exdate ||= []).push(value);
+                break;
+            case 'RDATE':
+                (event.rdate ||= []).push(value);
+                break;
+            case 'PRIORITY':
+                event.priority = Number(value);
+                break;
+            case 'DURATION':
+                event.duration = value;
+                break;
+            case 'GEO': {
+                const parts = value.split(';');
+                if (parts.length === 2) {
+                    const lat = Number(parts[0]);
+                    const lon = Number(parts[1]);
+                    if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+                        event.geo = { latitude: lat, longitude: lon };
+                    }
+                }
+                break;
+            }
             case 'ATTENDEE': {
                 if (!event.attendee) {
                     event.attendee = [];
                 }
-                const [params, email] = value.split('mailto:');
+                const [paramsStr, email] = value.split('mailto:');
                 const attendee = {
                     val: `mailto:${email}`,
                     params: {} as ICalParams
                 };
-                if (params) {
-                    params.split(';').forEach((param: string) => {
+                if (paramsStr) {
+                    paramsStr.split(';').forEach((param: string) => {
                         const [paramKey, paramValue] = param.split('=');
                         if (paramKey && paramValue) {
                             attendee.params[paramKey] = paramValue;
@@ -140,6 +210,21 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
                             }
                         });
                     }
+                }
+                break;
+            }
+            default: {
+                // Sammle unbekannte/rohe Properties innerhalb VEVENT
+                if (!event.raw) event.raw = {};
+                if (event.raw[key]) {
+                    const existing = event.raw[key];
+                    if (Array.isArray(existing)) {
+                        existing.push(value);
+                    } else {
+                        event.raw[key] = [existing as string, value];
+                    }
+                } else {
+                    event.raw[key] = value;
                 }
                 break;
             }
@@ -207,13 +292,28 @@ export function parseEventResults(events: CalendarObjectType[]): IEventResponse[
             title: eventInfo.summary ?? '',
             start: eventInfo.start?.toISOString(),
             end: eventInfo.end?.toISOString(),
+            tzidStart: eventInfo.tzidStart,
+            tzidEnd: eventInfo.tzidEnd,
+            dtstamp: eventInfo.dtstamp?.toISOString(),
             description: eventInfo.description ?? '',
             location: eventInfo.location ?? '',
             created: eventInfo.created,
             lastModified: eventInfo.lastmodified,
             status: eventInfo.status as IEventResponse['status'],
+            sequence: eventInfo.sequence,
+            transparency: eventInfo.transparency,
+            categories: eventInfo.categories,
+            class: eventInfo.class,
+            rrule: eventInfo.rrule,
+            recurrenceId: eventInfo.recurrenceId,
+            exdate: eventInfo.exdate,
+            rdate: eventInfo.rdate,
+            priority: eventInfo.priority,
+            duration: eventInfo.duration,
+            geo: eventInfo.geo,
             attendees,
             organizer,
+            rawProperties: eventInfo.raw,
         });
     }
 

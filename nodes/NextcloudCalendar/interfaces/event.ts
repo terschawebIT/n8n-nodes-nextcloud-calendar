@@ -27,15 +27,29 @@ export interface IEventResponse extends IDataObject {
     title?: string;
     start?: string;
     end?: string;
+    tzidStart?: string;
+    tzidEnd?: string;
+    dtstamp?: string;
     description?: string;
     location?: string;
     created?: Date;
     lastModified?: Date;
     status?: string;
     sequence?: number;
+    transparency?: 'OPAQUE' | 'TRANSPARENT' | string;
+    categories?: string[];
+    class?: 'PUBLIC' | 'PRIVATE' | 'CONFIDENTIAL' | string;
+    rrule?: string;
+    recurrenceId?: string;
+    exdate?: string[];
+    rdate?: string[];
+    priority?: number;
+    duration?: string;
+    geo?: { latitude: number; longitude: number };
     organizer?: {
         email: string;
         displayName?: string;
     };
     attendees?: IAttendee[];
+    rawProperties?: Record<string, string | string[]>;
 }
