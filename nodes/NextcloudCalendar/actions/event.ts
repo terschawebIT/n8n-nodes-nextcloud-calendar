@@ -149,19 +149,27 @@ export async function createEvent(
 
     console.log(`Response von createCalendarObject:`, response);
 
-    // Verifikation: Termin muss serverseitig lesbar sein, sonst Fehler werfen
+    // Verifikation mit Retry (Nextcloud kann verzögert schreiben)
     const calId =
-        (typeof calendar.displayName === 'string' && calendar.displayName)
-            ? calendar.displayName
-            : ((typeof calendar.url === 'string' && calendar.url) ? calendar.url : data.calendarName);
+        (typeof calendar.url === 'string' && calendar.url)
+            ? calendar.url
+            : ((typeof calendar.displayName === 'string' && calendar.displayName) ? calendar.displayName : data.calendarName);
     let createdEvent;
-    try {
-        createdEvent = await getEvent(context, calId as string, event.uid);
-    } catch (error) {
-        const errMessage = (error as Error)?.message || 'Unknown error';
-        throw new NodeOperationError(context.getNode(), `Event could not be verified after creation. Server did not return the created UID. Details: ${errMessage}`, {
-            description: 'Please ensure valid App Password (Basic Auth), no throttling (brute force), and a correct calendar URL/ID.',
-        });
+    const maxAttempts = 4;
+    const delay = async (ms: number) => new Promise(r => setTimeout(r, ms));
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            createdEvent = await getEvent(context, calId as string, event.uid);
+            break;
+        } catch (error) {
+            if (attempt === maxAttempts) {
+                const errMessage = (error as Error)?.message || 'Unknown error';
+                throw new NodeOperationError(context.getNode(), `Event could not be verified after creation. Server did not return the created UID. Details: ${errMessage}`, {
+                    description: 'Please ensure valid App Password (Basic Auth), no throttling (brute force), and a correct calendar URL/ID.',
+                });
+            }
+            await delay(600 * attempt);
+        }
     }
 
     // Verbesserte Rückgabe als eigenes Objekt
@@ -356,7 +364,12 @@ export async function deleteEvent(
                         title: existing.title,
                         start: existing.start as string,
                         end: existing.end as string,
-                        attendees: existing.attendees as any,
+                        attendees: (existing.attendees || []).map(a => ({
+                            email: String(a.email || ''),
+                            displayName: typeof a.displayName === 'string' ? a.displayName : undefined,
+                            role: (a.role as 'REQ-PARTICIPANT' | 'OPT-PARTICIPANT' | 'CHAIR') || 'REQ-PARTICIPANT',
+                            rsvp: Boolean(a.rsvp),
+                        })),
                         method: 'CANCEL',
                     } as unknown as IEventICal),
                 },

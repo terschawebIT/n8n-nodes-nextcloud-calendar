@@ -78,7 +78,7 @@ export class NextcloudCalendar implements INodeType {
                     }
                     return calendars.map((calendar: DAVCalendar) => ({
                         name: (calendar.displayName as string) || 'Unbenannter Kalender',
-                        value: (calendar.displayName as string) || calendar.url || '',
+                        value: (calendar.url as string) || (calendar.displayName as string) || '',
                     }));
                 } catch (error) {
                     console.error('Fehler beim Laden der Kalender:', error);
@@ -98,15 +98,15 @@ export class NextcloudCalendar implements INodeType {
                             results: [{ name: 'Keine Kalender Gefunden', value: '' }],
                         };
                     }
-                    let calList = calendars as { displayName: string }[];
+                    let calList = calendars as { displayName: string; url: string }[];
                     if (filter && filter.trim().length > 0) {
                         const normalized = filter.toLowerCase();
-                        calList = calList.filter(c => (c.displayName || '').toLowerCase().includes(normalized));
+                        calList = calList.filter(c => ((c.displayName || '').toLowerCase().includes(normalized)) || ((c.url || '').toLowerCase().includes(normalized)));
                     }
                     return {
                         results: calList.map((calendar) => ({
                             name: calendar.displayName,
-                            value: calendar.displayName,
+                            value: calendar.url || calendar.displayName,
                         })),
                     };
                 } catch (error) {

@@ -61,14 +61,14 @@ export const eventOperations: INodeProperties[] = [
 ];
 
 export const eventFields: INodeProperties[] = [
-    // Kalender-Name für alle Event-Operationen
+    // Kalender-Auswahl: value = URL, Label = Anzeigename
     {
         displayName: 'Kalender',
         name: 'calendarName',
         type: 'resourceLocator',
         default: '',
         required: true,
-        description: 'Wählen Sie einen Kalender aus der Liste oder geben Sie dessen ID an',
+        description: 'Wählen Sie einen Kalender (Label=Name). Gespeichert wird die URL/ID.',
         modes: [
             {
                 displayName: 'Liste',
@@ -81,16 +81,16 @@ export const eventFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'ID',
+                displayName: 'URL oder ID',
                 name: 'id',
                 type: 'string',
-                placeholder: 'Kalender-ID',
+                placeholder: 'Kalender-URL (empfohlen) oder ID/Name',
                 validation: [
                     {
                         type: 'regex',
                         properties: {
                             regex: '^.+$',
-                            errorMessage: 'Bitte eine gültige Kalender-ID eingeben',
+                            errorMessage: 'Bitte eine gültige Kalender-URL/ID eingeben',
                         },
                     },
                 ],
