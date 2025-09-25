@@ -128,6 +128,7 @@ export async function createEvent(
         headers: {
             'Content-Type': 'text/calendar; charset=utf-8',
             'Prefer': 'return=representation',
+            'If-None-Match': '*',
         },
     });
 
@@ -344,6 +345,7 @@ function generateICalString(event: IEventICal) {
     let iCalString = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//n8n//Nextcloud Calendar Node//EN
+${event.timeZone && event.timeZone !== 'UTC' ? `X-WR-TIMEZONE:${event.timeZone}\n` : ''}METHOD:PUBLISH
 BEGIN:VEVENT
 UID:${event.uid}
 DTSTAMP:${timestamp}
