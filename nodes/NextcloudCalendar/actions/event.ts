@@ -135,11 +135,14 @@ export async function createEvent(
     const iCalString = generateICalString(event);
     console.log(`iCal-String: ${iCalString}`);
 
-    // Verwende die funktionierende Methode aus Version 0.1.36: Keine Header
+    // Setze ausschließlich Content-Type, damit Nextcloud kein 415 liefert; Auth-Header kommen vom Client
     const response = await client.createCalendarObject({
         calendar,
         filename: `${event.uid}.ics`,
         iCalString: iCalString,
+        headers: {
+            'Content-Type': 'text/calendar; charset=utf-8',
+        },
     });
 
     console.log(`Response von createCalendarObject:`, response);
