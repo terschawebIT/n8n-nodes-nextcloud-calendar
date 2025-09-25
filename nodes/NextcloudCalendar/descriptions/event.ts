@@ -135,7 +135,7 @@ export const eventFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['event'],
-                operation: ['create'],
+                operation: ['create', 'update'],
             },
         },
         description: 'Titel des Termins',
@@ -149,7 +149,7 @@ export const eventFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['event'],
-                operation: ['create'],
+                operation: ['create', 'update'],
             },
         },
         description: 'Startzeit des Termins',
@@ -163,7 +163,7 @@ export const eventFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['event'],
-                operation: ['create'],
+                operation: ['create', 'update'],
             },
         },
         description: 'Endzeit des Termins',
@@ -279,6 +279,22 @@ export const eventFields: INodeProperties[] = [
             },
         ],
         description: 'Teilnehmer zum Termin hinzufügen',
+    },
+
+    // Zeitzone (konfigurierbar)
+    {
+        displayName: 'Zeitzone',
+        name: 'timeZone',
+        type: 'string',
+        default: 'UTC',
+        placeholder: 'z. B. Europe/Berlin',
+        displayOptions: {
+            show: {
+                resource: ['event'],
+                operation: ['create'],
+            },
+        },
+        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer lassen für UTC.',
     },
 
     // Zeitraum für Termine suchen

@@ -8,6 +8,7 @@ export interface IEventBase {
     description?: string;
     location?: string;
     attendees?: IAttendee[];
+    timeZone?: string;
 }
 
 export interface IEventCreate extends IEventBase {
@@ -31,6 +32,7 @@ export interface IEventResponse extends IDataObject {
     created?: Date;
     lastModified?: Date;
     status?: string;
+    sequence?: number;
     organizer?: {
         email: string;
         displayName?: string;
