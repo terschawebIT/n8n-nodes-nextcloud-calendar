@@ -140,11 +140,6 @@ export async function createEvent(
         calendar,
         filename: `${event.uid}.ics`,
         iCalString: iCalString,
-        headers: {
-            'Content-Type': 'text/calendar; charset=utf-8',
-            'Prefer': 'return=representation',
-            'If-None-Match': '*',
-        },
     });
 
     console.log(`Response von createCalendarObject:`, response);
