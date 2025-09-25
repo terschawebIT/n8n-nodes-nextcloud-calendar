@@ -13,7 +13,19 @@ export async function findCalendar(
     calendarName: string,
 ): Promise<DAVCalendar> {
     const calendars = await getCalendars(context);
-    const calendar = calendars.find((cal: DAVCalendar) => cal.displayName === calendarName);
+    // 1) Exakte Übereinstimmung nach displayName
+    let calendar = calendars.find((cal: DAVCalendar) => cal.displayName === calendarName);
+    // 2) Falls kein Treffer: nach URL/HREF suchen (wenn Nutzer die ID/URL angegeben hat)
+    if (!calendar) {
+        calendar = calendars.find((cal: DAVCalendar) => cal.url === calendarName);
+    }
+    // 3) Falls weiterhin kein Treffer: Nach Endung des URL-Pfads matchen (z. B. .../niko/)
+    if (!calendar) {
+        calendar = calendars.find((cal: DAVCalendar) => {
+            const suffix = `/${calendarName.replace(/\/?$/, '/')}`;
+            return typeof cal.url === 'string' && cal.url.endsWith(suffix);
+        });
+    }
     if (!calendar) {
         throw new Error(`Calendar "${calendarName}" not found`);
     }

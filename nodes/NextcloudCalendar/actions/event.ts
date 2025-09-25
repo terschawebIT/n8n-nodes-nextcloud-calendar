@@ -136,10 +136,13 @@ export async function createEvent(
 
     // Prüfe, ob der Termin tatsächlich erstellt wurde
     try {
-        const createdEvent = await getEvent(context, data.calendarName, event.uid);
+        const calId = typeof calendar.displayName === 'string' && calendar.displayName
+            ? calendar.displayName
+            : (typeof calendar.url === 'string' && calendar.url ? calendar.url : data.calendarName);
+        const createdEvent = await getEvent(context, calId as string, event.uid);
         console.log(`Termin erfolgreich erstellt und gefunden:`, createdEvent);
     } catch (error) {
-        console.log(`Warnung: Erstellter Termin konnte nicht gefunden werden:`, error.message);
+        console.log(`Warnung: Erstellter Termin konnte nicht gefunden werden:`, (error as Error).message);
     }
 
     // Verbesserte Rückgabe als eigenes Objekt
