@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-nextcloud-calendar",
-  "version": "0.1.44",
+  "version": "0.1.52",
   "description": "n8n Node für die Integration mit Nextcloud Calendar",
   "keywords": [
     "n8n-community-node-package",
