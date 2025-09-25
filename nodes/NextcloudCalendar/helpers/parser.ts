@@ -48,6 +48,7 @@ interface IParsedEvent {
     created?: Date;
     lastmodified?: Date;
     status?: string;
+    sequence?: number;
     attendee?: Array<{ val: string; params: ICalParams }>;
     organizer?: { val: string; params: ICalParams };
 }
@@ -95,6 +96,9 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
                 break;
             case 'STATUS':
                 event.status = value;
+                break;
+            case 'SEQUENCE':
+                event.sequence = parseInt(value, 10);
                 break;
             case 'ATTENDEE':
                 if (!event.attendee) {
@@ -203,6 +207,7 @@ export function parseEventResults(events: CalendarObjectType[]): IEventResponse[
             created: eventInfo.created,
             lastModified: eventInfo.lastmodified,
             status: eventInfo.status as IEventResponse['status'],
+            sequence: eventInfo.sequence,
             attendees,
             organizer,
         });
@@ -239,6 +244,7 @@ export function parseICalEvent(calendarObject: DAVCalendarObject): IEventRespons
         created: event.created,
         lastModified: event.lastmodified,
         status: event.status,
+        sequence: event.sequence,
         // Vollständige Informationen über Organisator zurückgeben
         organizer: event.organizer ? {
             email: event.organizer.val.replace('mailto:', ''),
