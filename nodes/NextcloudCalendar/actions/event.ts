@@ -149,7 +149,7 @@ export async function createEvent(
 
     console.log(`Response von createCalendarObject:`, response);
 
-    // Verifikation mit Retry (Nextcloud kann verzögert schreiben)
+    // Verifikation mit Retry (einfach): per Zeitfenster abrufen und nach UID filtern
     const calId =
         (typeof calendar.url === 'string' && calendar.url)
             ? calendar.url
@@ -157,19 +157,40 @@ export async function createEvent(
     let createdEvent;
     const maxAttempts = 4;
     const delay = async (ms: number) => new Promise(r => setTimeout(r, ms));
+    let verified = false;
+    const startDateVerify = new Date(event.start as string);
+    const endDateVerify = new Date(event.end as string);
+    const windowStartIso = new Date(startDateVerify.getTime() - 5 * 60 * 1000).toISOString();
+    const windowEndIso = new Date(endDateVerify.getTime() + 5 * 60 * 1000).toISOString();
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            createdEvent = await getEvent(context, calId as string, event.uid);
+        const eventsInWindow = await getEvents(context, calId as string, windowStartIso, windowEndIso);
+        createdEvent = (eventsInWindow || []).find(e => e.uid === event.uid);
+        if (createdEvent) {
+            verified = true;
             break;
-        } catch (error) {
-            if (attempt === maxAttempts) {
-                const errMessage = (error as Error)?.message || 'Unknown error';
-                throw new NodeOperationError(context.getNode(), `Event could not be verified after creation. Server did not return the created UID. Details: ${errMessage}`, {
-                    description: 'Please ensure valid App Password (Basic Auth), no throttling (brute force), and a correct calendar URL/ID.',
-                });
-            }
-            await delay(600 * attempt);
         }
+        await delay(600 * attempt);
+    }
+    // Fallback: Falls Server eine Objekt-URL zurückgibt, daraufhin Kalenderpfad ableiten und erneut das Zeitfenster prüfen
+    if (!verified && response && typeof response === 'object' && 'url' in response) {
+        const objectUrl = (response as { url?: string }).url || '';
+        const calendarUrl = objectUrl.includes('/') ? objectUrl.slice(0, objectUrl.lastIndexOf('/') + 1) : '';
+        if (calendarUrl) {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const eventsInWindow = await getEvents(context, calendarUrl, windowStartIso, windowEndIso);
+                createdEvent = (eventsInWindow || []).find(e => e.uid === event.uid);
+                if (createdEvent) {
+                    verified = true;
+                    break;
+                }
+                await delay(700 * attempt);
+            }
+        }
+    }
+    if (!verified) {
+        throw new NodeOperationError(context.getNode(), `Event could not be verified after creation. Server did not return the created UID. Details: Event with ID "${event.uid}" not found`, {
+            description: 'Please ensure valid App Password (Basic Auth), no throttling (brute force), and a correct calendar URL/ID.',
+        });
     }
 
     // Verbesserte Rückgabe als eigenes Objekt
