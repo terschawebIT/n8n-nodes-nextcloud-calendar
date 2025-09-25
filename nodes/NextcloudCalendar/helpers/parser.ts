@@ -341,6 +341,9 @@ export function parseICalEvent(calendarObject: DAVCalendarObject): IEventRespons
         title: event.summary ?? '',
         start: event.start?.toISOString(),
         end: event.end?.toISOString(),
+        tzidStart: event.tzidStart,
+        tzidEnd: event.tzidEnd,
+        dtstamp: event.dtstamp?.toISOString(),
         description: event.description ?? '',
         location: event.location ?? '',
         url: calendarObject.url ?? '',
@@ -348,6 +351,17 @@ export function parseICalEvent(calendarObject: DAVCalendarObject): IEventRespons
         created: event.created,
         lastModified: event.lastmodified,
         status: event.status,
+        sequence: event.sequence,
+        transparency: event.transparency,
+        categories: event.categories,
+        class: event.class,
+        rrule: event.rrule,
+        recurrenceId: event.recurrenceId,
+        exdate: event.exdate,
+        rdate: event.rdate,
+        priority: event.priority,
+        duration: event.duration,
+        geo: event.geo,
         // Vollständige Informationen über Organisator zurückgeben
         organizer: event.organizer ? {
             email: event.organizer.val.replace('mailto:', ''),
@@ -371,6 +385,7 @@ export function parseICalEvent(calendarObject: DAVCalendarObject): IEventRespons
                     status: ((event.attendee as { val: string; params: ICalParams }).params?.PARTSTAT as IAttendee['status']) ?? 'NEEDS-ACTION',
                     rsvp: (event.attendee as { val: string; params: ICalParams }).params?.RSVP === 'TRUE',
                   }],
+        rawProperties: event.raw,
     };
 
     return response;
