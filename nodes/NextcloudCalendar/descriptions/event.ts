@@ -281,20 +281,37 @@ export const eventFields: INodeProperties[] = [
         description: 'Teilnehmer zum Termin hinzufügen',
     },
 
-    // Zeitzone (konfigurierbar)
+    // Zeitzone (benutzerfreundlich als Liste mit Freitext-Option)
     {
         displayName: 'Zeitzone',
         name: 'timeZone',
-        type: 'string',
-        default: 'UTC',
-        placeholder: 'z. B. Europe/Berlin',
+        type: 'resourceLocator',
+        default: '',
         displayOptions: {
             show: {
                 resource: ['event'],
                 operation: ['create'],
             },
         },
-        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer lassen für UTC.',
+        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer = UTC.',
+        modes: [
+            {
+                displayName: 'Liste',
+                name: 'list',
+                type: 'list',
+                typeOptions: {
+                    searchListMethod: 'getTimeZones',
+                    searchable: true,
+                    searchFilterRequired: false,
+                },
+            },
+            {
+                displayName: 'IANA-TZ',
+                name: 'id',
+                type: 'string',
+                placeholder: 'z. B. Europe/Berlin',
+            },
+        ],
     },
 
     // Zeitraum für Termine suchen

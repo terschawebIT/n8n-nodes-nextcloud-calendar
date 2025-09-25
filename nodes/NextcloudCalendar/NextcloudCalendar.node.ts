@@ -116,6 +116,27 @@ export class NextcloudCalendar implements INodeType {
                     };
                 }
             },
+            async getTimeZones(
+                this: ILoadOptionsFunctions,
+                filter?: string,
+            ): Promise<INodeListSearchResult> {
+                // Kuratierte Liste gängiger IANA-Zeitzonen für eine benutzerfreundliche Auswahl
+                const zones = [
+                    'UTC',
+                    'Europe/Berlin', 'Europe/Paris', 'Europe/London', 'Europe/Madrid', 'Europe/Rome', 'Europe/Amsterdam', 'Europe/Prague', 'Europe/Vienna',
+                    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo',
+                    'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Kolkata', 'Asia/Dubai',
+                    'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
+                    'Africa/Johannesburg', 'Africa/Cairo',
+                ];
+                const q = (filter || '').toLowerCase();
+                const filtered = q
+                    ? zones.filter(z => z.toLowerCase().includes(q))
+                    : zones;
+                return {
+                    results: filtered.map(z => ({ name: z, value: z })),
+                };
+            },
         },
     };
 

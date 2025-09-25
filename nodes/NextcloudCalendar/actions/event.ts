@@ -95,10 +95,24 @@ export async function createEvent(
     const calendar = await findCalendar(context, client, data.calendarName);
     const credentials = await context.getCredentials('nextcloudCalendarApi');
 
+    const normalizeTZ = (tz: unknown): string | undefined => {
+        if (typeof tz === 'string') return tz || undefined;
+        if (tz && typeof tz === 'object') {
+            if ('value' in tz && typeof (tz as { value?: unknown }).value === 'string') {
+                return (tz as { value?: string }).value || undefined;
+            }
+            if ('id' in tz && typeof (tz as { id?: unknown }).id === 'string') {
+                return (tz as { id?: string }).id || undefined;
+            }
+        }
+        return undefined;
+    };
+
     const event = {
         ...data,
         uid: `n8n-${Date.now()}@nextcloud-calendar`,
         credentials: credentials,
+        timeZone: normalizeTZ((data as unknown as { timeZone?: unknown }).timeZone) || 'UTC',
     };
 
         console.log(`Erstelle Termin mit UID: ${event.uid}`);
