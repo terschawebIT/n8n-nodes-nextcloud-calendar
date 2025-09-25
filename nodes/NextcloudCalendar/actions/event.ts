@@ -1,5 +1,5 @@
 import { IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
-import { initClient } from '../helpers/client';
+import { initClient, resolveOrganizerInfo } from '../helpers/client';
 import { IEventCreate, IEventUpdate, IEventResponse } from '../interfaces/event';
 import { findCalendar } from './calendar';
 import { parseICalEvent } from '../helpers/parser';
@@ -21,6 +21,10 @@ interface IEventICal {
     attendees?: IAttendeeICal[];
     credentials?: { username?: string; email?: string };
     timeZone?: string;
+    organizerEmail?: string;
+    organizerName?: string;
+    method?: 'PUBLISH' | 'REQUEST' | 'CANCEL';
+    sequence?: number;
 }
 
 export async function getEvents(
@@ -108,11 +112,22 @@ export async function createEvent(
         return undefined;
     };
 
+    // Organizer-E-Mail automatisch aus Credentials ableiten (username@hostname)
+    const organizerInfo = await resolveOrganizerInfo(context);
+    const organizerEmail = organizerInfo.email;
+
+    const sendInvitations = !!(data as unknown as { sendInvitations?: boolean }).sendInvitations;
+    const hasAttendees = Array.isArray(data.attendees) && data.attendees.length > 0;
+    const method: 'REQUEST' | 'PUBLISH' | 'CANCEL' = (sendInvitations && hasAttendees) ? 'REQUEST' : 'PUBLISH';
+
     const event = {
         ...data,
         uid: `n8n-${Date.now()}@nextcloud-calendar`,
         credentials: credentials,
         timeZone: normalizeTZ((data as unknown as { timeZone?: unknown }).timeZone) || 'UTC',
+        organizerEmail,
+        organizerName: organizerInfo.displayName || (credentials.username as string) || 'n8n',
+        method,
     };
 
         console.log(`Erstelle Termin mit UID: ${event.uid}`);
@@ -229,10 +244,23 @@ export async function updateEvent(
         headers['Prefer'] = 'return=representation';
     }
 
+    // SEQUENCE erhöhen, wenn vorhandene SEQUENCE ausgelesen werden kann
+    let nextSequence = 1;
+    try {
+        const existing = await getEvent(context, data.calendarName, data.eventId);
+        if (existing && typeof existing.sequence === 'number') {
+            nextSequence = existing.sequence + 1;
+        }
+    } catch {}
+
     const response = await client.updateCalendarObject({
         calendarObject: {
             ...events[0],
-            data: generateICalString(updatedEvent),
+            data: generateICalString({
+                ...(updatedEvent as unknown as IEventICal),
+                method: (Array.isArray(updatedEvent.attendees) && updatedEvent.attendees.length > 0) ? 'REQUEST' : 'PUBLISH',
+                sequence: nextSequence,
+            }),
         },
         headers: headers,
     });
@@ -258,6 +286,13 @@ export async function updateEvent(
             const etagValue = (response as { etag?: unknown }).etag;
             (result as { url?: string; etag?: string }).etag = typeof etagValue === 'string' ? etagValue : String(etagValue);
         }
+    }
+
+    // Verify-after-update (optional, soft)
+    try {
+        await getEvent(context, data.calendarName, data.eventId);
+    } catch (error) {
+        console.warn('Warnung: Update konnte nicht verifiziert werden:', (error as Error).message);
     }
 
     return result;
@@ -302,6 +337,34 @@ export async function deleteEvent(
 
     if (!events || events.length === 0) {
         throw new Error(`Event with ID "${eventId}" not found`);
+    }
+
+    // Optional: Stornierungen vor dem Löschen senden (METHOD:CANCEL)
+    const sendCancellations = !!(context.getNodeParameter('sendCancellations', 0, true) as boolean);
+    if (sendCancellations) {
+        try {
+            const existing = await getEvent(context, calendarName, eventId);
+            const headers: Record<string, string> = {
+                'Content-Type': 'text/calendar; charset=utf-8',
+                'Prefer': 'return=representation',
+            };
+            await client.updateCalendarObject({
+                calendarObject: {
+                    ...events[0],
+                    data: generateICalString({
+                        uid: existing.uid,
+                        title: existing.title,
+                        start: existing.start as string,
+                        end: existing.end as string,
+                        attendees: existing.attendees as any,
+                        method: 'CANCEL',
+                    } as unknown as IEventICal),
+                },
+                headers,
+            });
+        } catch (error) {
+            console.warn('Warnung: Cancel vor Delete fehlgeschlagen:', (error as Error).message);
+        }
     }
 
     await client.deleteCalendarObject({
@@ -352,7 +415,7 @@ function generateICalString(event: IEventICal) {
     let iCalString = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//n8n//Nextcloud Calendar Node//EN
-${event.timeZone && event.timeZone !== 'UTC' ? `X-WR-TIMEZONE:${event.timeZone}\n` : ''}METHOD:PUBLISH
+${event.timeZone && event.timeZone !== 'UTC' ? `X-WR-TIMEZONE:${event.timeZone}\n` : ''}METHOD:${event.method || 'PUBLISH'}
 BEGIN:VEVENT
 UID:${event.uid}
 DTSTAMP:${timestamp}
@@ -375,33 +438,27 @@ STATUS:CONFIRMED
         iCalString += `LOCATION:${event.location}\n`;
     }
 
-    // Temporär: ORGANIZER komplett deaktiviert für Debugging
-    console.log(`ORGANIZER wird temporär NICHT gesetzt (Debugging)`);
-    // const credentials = event.credentials || {};
-    // const username = typeof credentials.username === 'string' ? credentials.username : 'n8n';
-    // let organizerEmail = `${username}@localhost`;
-    // if (typeof credentials.email === 'string' && credentials.email.includes('@')) {
-    //     organizerEmail = credentials.email;
-    // }
-    // console.log(`ORGANIZER wird gesetzt: CN=${username}, Email=${organizerEmail}`);
-    // iCalString += `ORGANIZER;CN=${username}:mailto:${organizerEmail}\n`;
+    // ORGANIZER (automatisch aus Credentials abgeleitet)
+    if (event.organizerEmail) {
+        const cn = (event.organizerName || '').replace(/[,;]/g, ' ');
+        iCalString += `ORGANIZER;CN=${cn}:mailto:${event.organizerEmail}\n`;
+    }
 
-    // ATTENDEES temporär deaktiviert für Debugging
-    if (event.attendees && event.attendees.length > 0) {
-        console.log(`WARNUNG: ${event.attendees.length} Teilnehmer werden temporär ignoriert (Debugging)`);
-        // Kommentiert aus für Debugging:
-        // event.attendees.forEach((attendee) => {
-        //     if (typeof attendee.email === 'string' && attendee.email.includes('@')) {
-        //         let attendeeString = 'ATTENDEE';
-        //         if (typeof attendee.displayName === 'string') {
-        //             attendeeString += `;CN=${attendee.displayName}`;
-        //         }
-        //         attendeeString += `;ROLE=${attendee.role || 'REQ-PARTICIPANT'}`;
-        //         attendeeString += ';PARTSTAT=NEEDS-ACTION';
-        //         attendeeString += `:mailto:${attendee.email}\n`;
-        //         iCalString += attendeeString;
-        //     }
-        // });
+    // ATTENDEES serialisieren (für Einladungen)
+    if (event.attendees && event.attendees.length > 0 && event.method === 'REQUEST') {
+        event.attendees.forEach((attendee) => {
+            if (typeof attendee.email === 'string' && attendee.email.includes('@')) {
+                let attendeeString = 'ATTENDEE';
+                if (typeof attendee.displayName === 'string' && attendee.displayName) {
+                    attendeeString += `;CN=${attendee.displayName.replace(/[,;]/g, ' ')}`;
+                }
+                attendeeString += `;ROLE=${attendee.role || 'REQ-PARTICIPANT'}`;
+                attendeeString += ';PARTSTAT=NEEDS-ACTION';
+                attendeeString += ';RSVP=TRUE';
+                attendeeString += `:mailto:${attendee.email}\n`;
+                iCalString += attendeeString;
+            }
+        });
     }
 
     iCalString += `END:VEVENT\nEND:VCALENDAR`;

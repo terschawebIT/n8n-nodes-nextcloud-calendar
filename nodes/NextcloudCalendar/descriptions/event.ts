@@ -215,6 +215,20 @@ export const eventFields: INodeProperties[] = [
         },
         description: 'Whether to send invitations to attendees',
     },
+    // Beim Löschen: Stornierungen versenden
+    {
+        displayName: 'Stornierungen Versenden',
+        name: 'sendCancellations',
+        type: 'boolean',
+        default: true,
+        displayOptions: {
+            show: {
+                resource: ['event'],
+                operation: ['delete'],
+            },
+        },
+        description: 'Send METHOD:CANCEL to attendees before deletion if attendees exist',
+    },
     {
         displayName: 'Teilnehmer',
         name: 'attendees',
