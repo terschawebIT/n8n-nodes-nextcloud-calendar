@@ -53,20 +53,29 @@ interface IParsedEvent {
 }
 
 function parseICS(icsData: string): { vevent: IParsedEvent } {
-    const lines = icsData.split('\n').map(line => line.trim());
+    const lines = icsData.split('\n').map(line => line.replace(/\r$/, ''));
     const event: IParsedEvent = {};
+    let inEvent = false;
 
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.startsWith('BEGIN:VEVENT')) {
+        const rawLine = lines[i].trim();
+
+        if (rawLine === 'BEGIN:VEVENT') {
+            inEvent = true;
             continue;
         }
-        if (line.startsWith('END:VEVENT')) {
+        if (rawLine === 'END:VEVENT') {
             break;
         }
+        if (!inEvent || rawLine.length === 0) {
+            continue;
+        }
 
-        const [key, ...values] = line.split(':');
-        const value = values.join(':');
+        const colonIdx = rawLine.indexOf(':');
+        if (colonIdx === -1) continue;
+        const keyWithParams = rawLine.slice(0, colonIdx);
+        const value = rawLine.slice(colonIdx + 1);
+        const [key] = keyWithParams.split(';'); // e.g. DTSTART;TZID=... -> DTSTART
 
         switch (key) {
             case 'UID':
@@ -96,7 +105,7 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
             case 'STATUS':
                 event.status = value;
                 break;
-            case 'ATTENDEE':
+            case 'ATTENDEE': {
                 if (!event.attendee) {
                     event.attendee = [];
                 }
@@ -115,7 +124,8 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
                 }
                 event.attendee.push(attendee);
                 break;
-            case 'ORGANIZER':
+            }
+            case 'ORGANIZER': {
                 const [orgParams, orgEmail] = value.split('mailto:');
                 event.organizer = {
                     val: `mailto:${orgEmail}`,
@@ -125,15 +135,14 @@ function parseICS(icsData: string): { vevent: IParsedEvent } {
                     if (event.organizer && event.organizer.params) {
                         orgParams.split(';').forEach((param: string) => {
                             const [paramKey, paramValue] = param.split('=');
-                            if (paramKey && paramValue) {
-                                if (event.organizer) {
-                                    event.organizer.params[paramKey] = paramValue;
-                                }
+                            if (paramKey && paramValue && event.organizer) {
+                                event.organizer.params[paramKey] = paramValue;
                             }
                         });
                     }
                 }
                 break;
+            }
         }
     }
 
