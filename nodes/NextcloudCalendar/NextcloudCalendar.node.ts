@@ -116,6 +116,30 @@ export class NextcloudCalendar implements INodeType {
                     };
                 }
             },
+            async getTimeZones(
+                this: ILoadOptionsFunctions,
+                filter?: string,
+            ): Promise<INodeListSearchResult> {
+                // Kleine, kuratierte Liste gängiger IANA-TZ plus Filter
+                const commonTimeZones: string[] = [
+                    'UTC',
+                    'Europe/Berlin', 'Europe/Vienna', 'Europe/Zurich', 'Europe/Paris', 'Europe/Amsterdam',
+                    'Europe/London', 'Europe/Madrid', 'Europe/Rome',
+                    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+                    'America/Sao_Paulo', 'America/Mexico_City',
+                    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Shanghai',
+                    'Australia/Sydney',
+                ];
+
+                let results = commonTimeZones;
+                if (filter && filter.trim().length > 0) {
+                    const f = filter.toLowerCase();
+                    results = results.filter(tz => tz.toLowerCase().includes(f));
+                }
+                return {
+                    results: results.map(tz => ({ name: tz, value: tz })),
+                };
+            },
         },
     };
 
@@ -206,6 +230,19 @@ export class NextcloudCalendar implements INodeType {
                             description: this.getNodeParameter('description', i, '') as string,
                             location: this.getNodeParameter('location', i, '') as string,
                         };
+
+                        // Zeitzone übernehmen (resourceLocator: list/id oder leer)
+                        const tzParam = this.getNodeParameter('timeZone', i, '') as unknown;
+                        if (tzParam && typeof tzParam === 'object' && tzParam !== null) {
+                            const tzObj = tzParam as { value?: unknown; id?: unknown };
+                            const tzValue = typeof tzObj.value === 'string' ? tzObj.value
+                                : (typeof tzObj.id === 'string' ? tzObj.id : '');
+                            if (tzValue) {
+                                (eventData as { timeZone?: string }).timeZone = tzValue;
+                            }
+                        } else if (typeof tzParam === 'string' && tzParam.trim().length > 0) {
+                            (eventData as { timeZone?: string }).timeZone = tzParam.trim();
+                        }
 
                         // Teilnehmer immer verarbeiten, wenn vorhanden
                         const attendees = this.getNodeParameter('attendees', i, {}) as IDataObject;

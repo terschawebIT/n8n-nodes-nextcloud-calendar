@@ -281,20 +281,49 @@ export const eventFields: INodeProperties[] = [
         description: 'Teilnehmer zum Termin hinzufügen',
     },
 
-    // Zeitzone (konfigurierbar)
+    // Zeitzone (benutzerfreundliche Auswahl)
     {
         displayName: 'Zeitzone',
         name: 'timeZone',
-        type: 'string',
-        default: 'UTC',
-        placeholder: 'z. B. Europe/Berlin',
+        type: 'resourceLocator',
+        default: '',
+        placeholder: 'Europe/Berlin (empfohlen) oder leer für UTC',
+        modes: [
+            {
+                displayName: 'Liste',
+                name: 'list',
+                type: 'list',
+                typeOptions: {
+                    searchListMethod: 'getTimeZones',
+                    searchable: true,
+                    searchFilterRequired: false,
+                },
+            },
+            {
+                displayName: 'ID',
+                name: 'id',
+                type: 'string',
+                placeholder: 'IANA-Zeitzone, z. B. Europe/Berlin',
+                validation: [
+                    {
+                        type: 'regex',
+                        properties: {
+                            regex: '^[A-Za-z_]+\/[A-Za-z0-9_\-+]+$',
+                            errorMessage: 'Bitte eine gültige IANA-Zeitzone eingeben (z. B. Europe/Berlin)',
+                        },
+                    },
+                ],
+            },
+        ],
         displayOptions: {
             show: {
                 resource: ['event'],
                 operation: ['create'],
             },
         },
-        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer lassen für UTC.',
+        description: 'Wählen Sie eine IANA-Zeitzone aus der Liste oder geben Sie sie manuell ein. Leer lassen für UTC.',
+        // @ts-expect-error: AIEnabled ist kein Standardfeld, wird aber von n8n AI genutzt
+        AIEnabled: true,
     },
 
     // Zeitraum für Termine suchen

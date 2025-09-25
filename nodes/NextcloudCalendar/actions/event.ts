@@ -20,6 +20,7 @@ interface IEventICal {
     location?: string;
     attendees?: IAttendeeICal[];
     credentials?: { username?: string; email?: string };
+    timeZone?: string;
 }
 
 export async function getEvents(
@@ -320,32 +321,17 @@ function generateICalString(event: IEventICal) {
         return `${year}${month}${day}T${hours}${minutes}${seconds}`;
     };
 
-    // iCal-String mit Zeitzoneneigenschaften
+    const tz = typeof event.timeZone === 'string' && event.timeZone.trim() !== '' ? event.timeZone.trim() : '';
+
+    // iCal-String: mit TZID wenn gesetzt, sonst UTC-Zeitstempel
     let iCalString = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//n8n//Nextcloud Calendar Node//EN
-BEGIN:VTIMEZONE
-TZID:Europe/Berlin
-BEGIN:DAYLIGHT
-TZOFFSETFROM:+0100
-TZOFFSETTO:+0200
-TZNAME:CEST
-DTSTART:19700329T020000
-RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
-END:DAYLIGHT
-BEGIN:STANDARD
-TZOFFSETFROM:+0200
-TZOFFSETTO:+0100
-TZNAME:CET
-DTSTART:19701025T030000
-RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
-END:STANDARD
-END:VTIMEZONE
 BEGIN:VEVENT
 UID:${event.uid}
 DTSTAMP:${timestamp}
-DTSTART;TZID=Europe/Berlin:${formatDateTime(startDate)}
-DTEND;TZID=Europe/Berlin:${formatDateTime(endDate)}
+${tz ? `DTSTART;TZID=${tz}:${formatDateTime(startDate)}` : `DTSTART:${formatDateTime(startDate)}Z`}
+${tz ? `DTEND;TZID=${tz}:${formatDateTime(endDate)}` : `DTEND:${formatDateTime(endDate)}Z`}
 SUMMARY:${event.title || 'Unbenannter Termin'}
 `;
 
