@@ -1,4 +1,4 @@
-import { IExecuteFunctions } from 'n8n-workflow';
+import { IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { initClient } from '../helpers/client';
 import { IEventCreate, IEventUpdate, IEventResponse } from '../interfaces/event';
 import { findCalendar } from './calendar';
@@ -134,15 +134,19 @@ export async function createEvent(
 
     console.log(`Response von createCalendarObject:`, response);
 
-    // Prüfe, ob der Termin tatsächlich erstellt wurde
-    try {
-        const calId = typeof calendar.displayName === 'string' && calendar.displayName
+    // Verifikation: Termin muss serverseitig lesbar sein, sonst Fehler werfen
+    const calId =
+        (typeof calendar.displayName === 'string' && calendar.displayName)
             ? calendar.displayName
-            : (typeof calendar.url === 'string' && calendar.url ? calendar.url : data.calendarName);
-        const createdEvent = await getEvent(context, calId as string, event.uid);
-        console.log(`Termin erfolgreich erstellt und gefunden:`, createdEvent);
+            : ((typeof calendar.url === 'string' && calendar.url) ? calendar.url : data.calendarName);
+    let createdEvent;
+    try {
+        createdEvent = await getEvent(context, calId as string, event.uid);
     } catch (error) {
-        console.log(`Warnung: Erstellter Termin konnte nicht gefunden werden:`, (error as Error).message);
+        const errMessage = (error as Error)?.message || 'Unknown error';
+        throw new NodeOperationError(context.getNode(), `Event could not be verified after creation. Server did not return the created UID. Details: ${errMessage}`, {
+            description: 'Please ensure valid App Password (Basic Auth), no throttling (brute force), and a correct calendar URL/ID.',
+        });
     }
 
     // Verbesserte Rückgabe als eigenes Objekt
@@ -151,9 +155,9 @@ export async function createEvent(
         message: 'Termin erfolgreich erstellt',
         uid: event.uid,
         details: {
-            title: event.title,
-            start: event.start,
-            end: event.end,
+            title: createdEvent?.title ?? event.title,
+            start: createdEvent?.start ?? (event.start as string),
+            end: createdEvent?.end ?? (event.end as string),
             attendeesCount: event.attendees?.length || 0,
         }
     };
