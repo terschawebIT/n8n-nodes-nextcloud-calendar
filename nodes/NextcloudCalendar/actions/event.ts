@@ -137,10 +137,11 @@ export async function createEvent(
 
     if (response && typeof response === 'object') {
         if ('url' in response) {
-            (result as { url?: string; etag?: string }).url = (response as any).url;
+            (result as { url?: string; etag?: string }).url = (response as { url?: string }).url;
         }
         if ('etag' in response) {
-            (result as { url?: string; etag?: string }).etag = String((response as any).etag);
+            const etagValue = (response as { etag?: unknown }).etag;
+            (result as { url?: string; etag?: string }).etag = typeof etagValue === 'string' ? etagValue : String(etagValue);
         }
     }
 
@@ -224,10 +225,11 @@ export async function updateEvent(
 
     if (response && typeof response === 'object') {
         if ('url' in response) {
-            (result as { url?: string; etag?: string }).url = (response as any).url;
+            (result as { url?: string; etag?: string }).url = (response as { url?: string }).url;
         }
         if ('etag' in response) {
-            (result as { url?: string; etag?: string }).etag = String((response as any).etag);
+            const etagValue = (response as { etag?: unknown }).etag;
+            (result as { url?: string; etag?: string }).etag = typeof etagValue === 'string' ? etagValue : String(etagValue);
         }
     }
 
@@ -355,7 +357,7 @@ SUMMARY:${event.title || 'Unbenannter Termin'}
         iCalString += `LOCATION:${event.location}\n`;
     }
 
-        // Temporär: ORGANIZER komplett deaktiviert für Debugging
+    // Temporär: ORGANIZER komplett deaktiviert für Debugging
     console.log(`ORGANIZER wird temporär NICHT gesetzt (Debugging)`);
     // const credentials = event.credentials || {};
     // const username = typeof credentials.username === 'string' ? credentials.username : 'n8n';

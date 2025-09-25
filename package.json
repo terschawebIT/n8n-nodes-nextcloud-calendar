@@ -23,9 +23,9 @@
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "lint": "eslint nodes credentials",
+    "lintfix": "eslint nodes credentials --fix",
+    "prepublishOnly": "npm run build && npm run lint"
   },
   "files": [
     "dist"
@@ -40,23 +40,29 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "@types/uuid": "^10.0.0",
-    "@typescript-eslint/eslint-plugin": "~5.45",
-    "@typescript-eslint/parser": "~5.45",
-    "eslint": "^8.0.0",
-    "eslint-plugin-n8n-nodes-base": "^1.11.0",
-    "gulp": "^4.0.2",
-    "n8n-core": "*",
-    "n8n-workflow": "*",
-    "prettier": "^2.7.1",
-    "typescript": "~4.8.4"
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
+    "eslint": "^9.36.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "typescript-eslint": "^8.44.1",
+    "gulp": "^5.0.1",
+    "n8n-workflow": "^1.110.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
   },
   "dependencies": {
-    "tsdav": "^2.0.3",
-    "uuid": "^11.1.0"
+    "tsdav": "^2.1.5",
+    "uuid": "^13.0.0"
   },
   "peerDependencies": {
     "n8n-workflow": ">=1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "overrides": {
+    "form-data": "^4.0.4"
   }
 }

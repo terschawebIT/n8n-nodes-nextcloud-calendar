@@ -9,6 +9,11 @@ Dieser n8n-Community-Node ermöglicht die Integration mit dem Nextcloud-Kalender
 - Nextcloud-spezifische Funktionen wie Einladungen und Benachrichtigungen
 - Optimiert für die deutsche Benutzeroberfläche
 
+## Voraussetzungen
+
+- Node.js >= 18 (empfohlen Node 20/22)
+- npm >= 10
+
 ## Installation
 
 1. Öffnen Sie Ihre n8n-Installation
@@ -16,6 +21,13 @@ Dieser n8n-Community-Node ermöglicht die Integration mit dem Nextcloud-Kalender
 3. Wählen Sie "Installieren"
 4. Geben Sie `n8n-nodes-nextcloud-calendar` ein
 5. Klicken Sie auf "Installieren"
+
+## Entwicklung / Build
+
+- Abhängigkeiten installieren: `npm install`
+- Build erzeugen: `npm run build` (kompiliert TypeScript und kopiert Icons)
+- Lint prüfen: `npm run lint`
+- Code formatieren: `npm run format`
 
 ## Konfiguration
 

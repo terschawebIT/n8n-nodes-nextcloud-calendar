@@ -1,7 +1,3 @@
-/* eslint-disable n8n-nodes-base/node-class-description-credentials-name-unsuffixed */
-/* eslint-disable n8n-nodes-base/node-class-description-inputs-wrong-regular-node */
-/* eslint-disable n8n-nodes-base/node-class-description-outputs-wrong */
-
 import {
     IExecuteFunctions,
     ILoadOptionsFunctions,
@@ -11,7 +7,6 @@ import {
     INodeTypeDescription,
     IDataObject,
     NodeOperationError,
-    NodeConnectionType,
     INodeListSearchResult,
 } from 'n8n-workflow';
 
@@ -45,8 +40,8 @@ export class NextcloudCalendar implements INodeType {
         defaults: {
             name: 'Nextcloud Calendar',
         },
-        inputs: [{ type: NodeConnectionType.Main }],
-        outputs: [{ type: NodeConnectionType.Main }],
+        inputs: ['main'],
+        outputs: ['main'],
         credentials: [
             {
                 name: 'nextcloudCalendarApi',
@@ -131,11 +126,21 @@ export class NextcloudCalendar implements INodeType {
         const operation = this.getNodeParameter('operation', 0) as string;
 
         // Hilfsfunktion zum Extrahieren des Kalendernamens aus resourceLocator
-        const getCalendarName = (calendarParam: any): string => {
+        const getCalendarName = (calendarParam: unknown): string => {
             if (typeof calendarParam === 'string') {
                 return calendarParam;
             }
-            return calendarParam?.value || calendarParam?.id || '';
+            if (
+                typeof calendarParam === 'object' &&
+                calendarParam !== null &&
+                ('value' in calendarParam || 'id' in calendarParam)
+            ) {
+                const obj = calendarParam as { value?: unknown; id?: unknown };
+                const value = typeof obj.value === 'string' ? obj.value : undefined;
+                const id = typeof obj.id === 'string' ? obj.id : undefined;
+                return value || id || '';
+            }
+            return '';
         };
 
         for (let i = 0; i < items.length; i++) {
