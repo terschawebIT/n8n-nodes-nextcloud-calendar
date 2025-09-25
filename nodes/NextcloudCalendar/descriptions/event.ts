@@ -61,14 +61,14 @@ export const eventOperations: INodeProperties[] = [
 ];
 
 export const eventFields: INodeProperties[] = [
-    // Kalender-Auswahl: value = URL, Label = Anzeigename
+    // Kalender-Name für alle Event-Operationen
     {
         displayName: 'Kalender',
         name: 'calendarName',
         type: 'resourceLocator',
         default: '',
         required: true,
-        description: 'Wählen Sie einen Kalender (Label=Name). Gespeichert wird die URL/ID.',
+        description: 'Wählen Sie einen Kalender aus der Liste oder geben Sie dessen ID an',
         modes: [
             {
                 displayName: 'Liste',
@@ -81,16 +81,16 @@ export const eventFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'URL oder ID',
+                displayName: 'ID',
                 name: 'id',
                 type: 'string',
-                placeholder: 'Kalender-URL (empfohlen) oder ID/Name',
+                placeholder: 'Kalender-ID',
                 validation: [
                     {
                         type: 'regex',
                         properties: {
                             regex: '^.+$',
-                            errorMessage: 'Bitte eine gültige Kalender-URL/ID eingeben',
+                            errorMessage: 'Bitte eine gültige Kalender-ID eingeben',
                         },
                     },
                 ],
@@ -215,20 +215,6 @@ export const eventFields: INodeProperties[] = [
         },
         description: 'Whether to send invitations to attendees',
     },
-    // Beim Löschen: Stornierungen versenden
-    {
-        displayName: 'Stornierungen Versenden',
-        name: 'sendCancellations',
-        type: 'boolean',
-        default: true,
-        displayOptions: {
-            show: {
-                resource: ['event'],
-                operation: ['delete'],
-            },
-        },
-        description: 'Send METHOD:CANCEL to attendees before deletion if attendees exist',
-    },
     {
         displayName: 'Teilnehmer',
         name: 'attendees',
@@ -295,37 +281,20 @@ export const eventFields: INodeProperties[] = [
         description: 'Teilnehmer zum Termin hinzufügen',
     },
 
-    // Zeitzone (benutzerfreundlich als Liste mit Freitext-Option)
+    // Zeitzone (konfigurierbar)
     {
         displayName: 'Zeitzone',
         name: 'timeZone',
-        type: 'resourceLocator',
-        default: '',
+        type: 'string',
+        default: 'UTC',
+        placeholder: 'z. B. Europe/Berlin',
         displayOptions: {
             show: {
                 resource: ['event'],
                 operation: ['create'],
             },
         },
-        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer = UTC.',
-        modes: [
-            {
-                displayName: 'Liste',
-                name: 'list',
-                type: 'list',
-                typeOptions: {
-                    searchListMethod: 'getTimeZones',
-                    searchable: true,
-                    searchFilterRequired: false,
-                },
-            },
-            {
-                displayName: 'IANA-TZ',
-                name: 'id',
-                type: 'string',
-                placeholder: 'z. B. Europe/Berlin',
-            },
-        ],
+        description: 'Zeitzone für DTSTART/DTEND (TZID). Leer lassen für UTC.',
     },
 
     // Zeitraum für Termine suchen

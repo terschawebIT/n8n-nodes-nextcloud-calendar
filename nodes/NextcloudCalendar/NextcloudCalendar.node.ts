@@ -78,7 +78,7 @@ export class NextcloudCalendar implements INodeType {
                     }
                     return calendars.map((calendar: DAVCalendar) => ({
                         name: (calendar.displayName as string) || 'Unbenannter Kalender',
-                        value: (calendar.url as string) || (calendar.displayName as string) || '',
+                        value: (calendar.displayName as string) || calendar.url || '',
                     }));
                 } catch (error) {
                     console.error('Fehler beim Laden der Kalender:', error);
@@ -98,15 +98,15 @@ export class NextcloudCalendar implements INodeType {
                             results: [{ name: 'Keine Kalender Gefunden', value: '' }],
                         };
                     }
-                    let calList = calendars as { displayName: string; url: string }[];
+                    let calList = calendars as { displayName: string }[];
                     if (filter && filter.trim().length > 0) {
                         const normalized = filter.toLowerCase();
-                        calList = calList.filter(c => ((c.displayName || '').toLowerCase().includes(normalized)) || ((c.url || '').toLowerCase().includes(normalized)));
+                        calList = calList.filter(c => (c.displayName || '').toLowerCase().includes(normalized));
                     }
                     return {
                         results: calList.map((calendar) => ({
                             name: calendar.displayName,
-                            value: calendar.url || calendar.displayName,
+                            value: calendar.displayName,
                         })),
                     };
                 } catch (error) {
@@ -115,27 +115,6 @@ export class NextcloudCalendar implements INodeType {
                         results: [{ name: 'Fehler Beim Laden Der Kalender', value: '' }],
                     };
                 }
-            },
-            async getTimeZones(
-                this: ILoadOptionsFunctions,
-                filter?: string,
-            ): Promise<INodeListSearchResult> {
-                // Kuratierte Liste gängiger IANA-Zeitzonen für eine benutzerfreundliche Auswahl
-                const zones = [
-                    'UTC',
-                    'Europe/Berlin', 'Europe/Paris', 'Europe/London', 'Europe/Madrid', 'Europe/Rome', 'Europe/Amsterdam', 'Europe/Prague', 'Europe/Vienna',
-                    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo',
-                    'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Hong_Kong', 'Asia/Kolkata', 'Asia/Dubai',
-                    'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
-                    'Africa/Johannesburg', 'Africa/Cairo',
-                ];
-                const q = (filter || '').toLowerCase();
-                const filtered = q
-                    ? zones.filter(z => z.toLowerCase().includes(q))
-                    : zones;
-                return {
-                    results: filtered.map(z => ({ name: z, value: z })),
-                };
             },
         },
     };

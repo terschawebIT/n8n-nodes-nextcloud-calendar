@@ -9,7 +9,6 @@ export interface IEventBase {
     location?: string;
     attendees?: IAttendee[];
     timeZone?: string;
-    organizerEmail?: string;
 }
 
 export interface IEventCreate extends IEventBase {
