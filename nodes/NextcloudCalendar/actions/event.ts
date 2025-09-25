@@ -20,6 +20,7 @@ interface IEventICal {
     location?: string;
     attendees?: IAttendeeICal[];
     credentials?: { username?: string; email?: string };
+    timeZone?: string;
 }
 
 export async function getEvents(
@@ -110,6 +111,10 @@ export async function createEvent(
         calendar,
         filename: `${event.uid}.ics`,
         iCalString: iCalString,
+        headers: {
+            'Content-Type': 'text/calendar; charset=utf-8',
+            'Prefer': 'return=representation',
+        },
     });
 
     console.log(`Response von createCalendarObject:`, response);
@@ -320,33 +325,23 @@ function generateICalString(event: IEventICal) {
         return `${year}${month}${day}T${hours}${minutes}${seconds}`;
     };
 
-    // iCal-String mit Zeitzoneneigenschaften
+    // iCal-String: TZ optional, ansonsten UTC; später CRLF normalisieren
+    const CRLF = '\r\n';
     let iCalString = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//n8n//Nextcloud Calendar Node//EN
-BEGIN:VTIMEZONE
-TZID:Europe/Berlin
-BEGIN:DAYLIGHT
-TZOFFSETFROM:+0100
-TZOFFSETTO:+0200
-TZNAME:CEST
-DTSTART:19700329T020000
-RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
-END:DAYLIGHT
-BEGIN:STANDARD
-TZOFFSETFROM:+0200
-TZOFFSETTO:+0100
-TZNAME:CET
-DTSTART:19701025T030000
-RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
-END:STANDARD
-END:VTIMEZONE
 BEGIN:VEVENT
 UID:${event.uid}
 DTSTAMP:${timestamp}
-DTSTART;TZID=Europe/Berlin:${formatDateTime(startDate)}
-DTEND;TZID=Europe/Berlin:${formatDateTime(endDate)}
+${event.timeZone && event.timeZone !== 'UTC'
+        ? `DTSTART;TZID=${event.timeZone}:${formatDateTime(startDate)}`
+        : `DTSTART:${formatDateTime(startDate)}Z`}
+${event.timeZone && event.timeZone !== 'UTC'
+        ? `DTEND;TZID=${event.timeZone}:${formatDateTime(endDate)}`
+        : `DTEND:${formatDateTime(endDate)}Z`}
 SUMMARY:${event.title || 'Unbenannter Termin'}
+SEQUENCE:0
+STATUS:CONFIRMED
 `;
 
     if (event.description) {
@@ -386,8 +381,6 @@ SUMMARY:${event.title || 'Unbenannter Termin'}
         // });
     }
 
-    iCalString += `END:VEVENT
-END:VCALENDAR`;
-
-    return iCalString;
+    iCalString += `END:VEVENT\nEND:VCALENDAR`;
+    return iCalString.replace(/\n/g, CRLF);
 }
